@@ -3,39 +3,35 @@
 #include <math.h>
 #define PI 3.141592653589793
 
-void meshgrid(float* x, float* y, int tam_x, int tam_y, float** X, float** Y) {
-    for(int i=0;i<tam_x; i++)
-      X[i] = calloc(tam_x, sizeof(float));
-
-    for(int i=0;i<tam_y; i++) 
-      Y[i] = calloc(tam_y, sizeof(float));
-    
-    for(int i=0; i<tam_x; i++) {
-        for(int j=0; j<tam_y; j++) {
-            X[i][j] = x[j]; 
-            //printf("%f  ", X[i][j]);
-        }
-        //printf("\n");
-    }
-    
-    printf("\n");
-    for(int i=0; i<tam_x; i++) {
-        for(int j=0; j<tam_y; j++) {
-            Y[i][j] = y[i];
-            //printf("%f  ", Y[i][j]);
-        }
-        //printf("\n");
-    }
-}
-
 void print(float *v, int tam);
 void printM(float** v, int tam_x, int tam_y);
 void cumtrapz();
 float briereI(float tmps, float* pdes);
-void varianza();
+void varianza(); //no entra nunca
 void vonFoerster(int nt, float* hmrs, float* tmps, float* pdes, float* t, float* tau);
 void tempSim(float* t, int T0, int T1, int T365, float *tmeds, float *tmps, int tamVecs);
 float* linspace(float start, float stop, int num);
+float** initZeros2DFloatMatrix(int tam_x, int tam_y) {
+    float **ptr = calloc(tam_x, sizeof(float*));
+    for(int i=0;i<tam_y; i++)
+      ptr[i] = calloc(tam_y, sizeof(float));
+    
+    return ptr;
+}
+
+void meshgrid(float* x, float* y, int tam_x, int tam_y, float** X, float** Y) {
+    for(int i=0; i<tam_x; i++) {
+        for(int j=0; j<tam_y; j++) {
+            X[i][j] = x[j]; 
+        }
+    }
+
+    for(int i=0; i<tam_x; i++) {
+        for(int j=0; j<tam_y; j++) {
+            Y[i][j] = y[i];
+        }
+    }
+}
 
 void main() {
     int tmin = 30;         // dia inicial de la corrida 30 de enero
@@ -78,7 +74,6 @@ void main() {
 }
 
 void cumtrapz() {
-
 }
 
 float briereI(float tmpsi, float* p) {
@@ -98,22 +93,20 @@ float briereI(float tmpsi, float* p) {
 }
 
 void varianza() {
-
 }
 
 
 void vonFoerster(int nt, float* hmrs, float* tmps, float* pdes, float* t, float* tau) {
-    float tol = 0.0001;                      // von Foerster model tolerance
-    print(t, nt);
-    print(tau, nt);
-    float** T = calloc(nt, sizeof(float *));
-    float** Tau = calloc(nt, sizeof(float *));
-    meshgrid(t, tau, nt, nt, T, Tau);          // T,Tau matrices //probablemente innecesaria, solo para graficar
-    //printM(T, nt, nt); //vuelven con todos ceros, dentro de la funcion meshgrid esta todo bien
-    //printM(Tau, nt, nt);
-    //# Pttau   = np.zeros((nt,nt))           // initialize matrix which will hold the convolution kernel
-    // wts     = np.zeros(nt)                // initialize vector which will hold weight for normalization
-    float* rates = calloc(nt, sizeof(float));  // initialize vector of rates for each instant t
+    float tol = 0.0001;                         //von Foerster model tolerance
+    
+    float** T = initZeros2DFloatMatrix(nt, nt);             //Create T pointer to 2x2 matrix
+    float** Tau = initZeros2DFloatMatrix(nt, nt);           //Create T pointer to 2x2 matrix
+    meshgrid(t, tau, nt, nt, T, Tau);           // T,Tau matrices
+    
+    float** Pttau = initZeros2DFloatMatrix(nt, nt);         // initialize matrix which will hold the convolution kernel
+    float* wts = calloc(nt, sizeof(float));     // initialize vector which will hold weight for normalization
+    float* rates = calloc(nt, sizeof(float));   // initialize vector of rates for each instant t
+    
     float* hmrsnul = calloc(1, sizeof(float));
     for(int i=0; i<nt; i++) {
         if(abs(hmrs[i]) > 0)
@@ -121,14 +114,12 @@ void vonFoerster(int nt, float* hmrs, float* tmps, float* pdes, float* t, float*
     }
     
     // evalua con humedad y sin humedad
-    if (*hmrsnul != 0) {
-       // calcula las tasas de desarrollo para temperaturas y humedades relativas dadas 
+    if (*hmrsnul != 0) { // calcula las tasas de desarrollo para temperaturas y humedades relativas dadas 
        for (int i=0; i<nt; i++) {
             //rates[i] = briereI(tmps[i], hmrs[i], pdes);   //lamar a BRIEREI //no se usa nunca
        }
     }
-    else {
-        // calcula las tasas de desarrollo  para temperaturas dadas
+    else { // calcula las tasas de desarrollo  para temperaturas dadas
         for (int i=0; i<nt; i++) {
             rates[i] = briereI(tmps[i], pdes); //lamar a BRIEREI
         }
@@ -143,7 +134,7 @@ void vonFoerster(int nt, float* hmrs, float* tmps, float* pdes, float* t, float*
 //         nu = pnu[2]
 //         Pttau  = (T>Tau)*vexp(-(1-(RT-RTau))**2/(4*nu*(abs(T-Tau)+tol)))\
 //                            /vsqrt(4*pi*nu*(abs(T-Tau)**3+tol))         // extended von foerster kernel
-//     else:
+//     else: //NO ENTRA NUNCA
 //         nus   = feval(fhnu, tmps, pnu)      // calcula las varianzas para temperatures dadas //lamar a varianza
 //         NU    = np.dot(np.ones(nt,1), nus)// crea una matriz de varianzas en funcion de las temperaturas
 //         Pttau = (T>Tau)*exp(-(1-(RT-RTau))**2/(4*NU*(abs(T-Tau)+tol))) \
@@ -153,6 +144,13 @@ void vonFoerster(int nt, float* hmrs, float* tmps, float* pdes, float* t, float*
 //     wts  = (ints>tol)*ints+(ints<=tol)  // calculate a  weighting factor 
 //                                          // make it one if the integral is too  small (< tol)
 //     pout = dt*np.dot(pinput/np.transpose(wts), Pttau)      // output distribution, normalized by integral of P
+}
+
+void cumtrapz(float *v1, float *v2, int tam) {
+    v2[0]=0;
+    for(int i=1;i<tam;i++) {
+        v2[i]= v2[i-1] + (v1[i-1] + v1[i]) / 2;
+    }
 }
 
 //TEMPSIM simula tabla de Temperaturas para hemisferio sur
@@ -185,7 +183,7 @@ void print(float *v, int tam) {
 void printM(float** v, int tam_x, int tam_y) {
     for(int i=0; i<tam_x; i++) {
         for(int j=0; j<tam_y; j++) {
-            printf("%f  ", &v[1][1]);
+            printf("%f  ", v[i][j]);
         }
         printf("\n");
     }
