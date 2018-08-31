@@ -4,9 +4,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import matplotlib.pyplot as plt
-
    
-def feval(funcName, *args):      # first argument must be a string
+def feval(funcName  , *args):      # first argument must be a string
     return eval(funcName)(*args)
 
 def cumtrapz(hs):
@@ -14,9 +13,8 @@ def cumtrapz(hs):
     for i in range(1,len(hs)):
         ct[i] = ct[i-1] + (hs[i-1] + hs[i]) / 2.0
     return ct
-      
+# BRIEREI - BriereI - 3 parametros      
 def BriereI(tmpsi, p):
-# BRIEREI - BriereI - 3 parametros
 	r  = 0.0
 	if tmpsi <= p[1]:
 	   r = 0.0
@@ -69,14 +67,13 @@ def vonFoerster(dt, t, tau, nt, tmps, hmrs, pnu, fhnu, pdes, fhrates, pinput):
     wts     = np.zeros(nt)                # initialize vector which will hold weight for normalization
     rates   = np.zeros(nt)                # initialize vector of rates for each instant t
     hmrsnul = np.sum(abs(hmrs) > 0)
-    
-#    evalua con humedad y sin humedad
+    #evalua con humedad y sin humedad
     if hmrsnul != 0:
        # calcula las tasas de desarrollo para temperaturas y humedades relativas dadas 
        for i in range(nt):
-            rates[i] = feval(fhrates, tmps[i], hmrs[i], pdes)   
+            rates[i] = feval(fhrates, tmps[i], hmrs[i], pdes)
     else:
-       # calcula las tasas de desarrollo  para temperaturas dadas
+        # calcula las tasas de desarrollo  para temperaturas dadas
         for i in range(nt):
             rates[i] = feval(fhrates, tmps[i], pdes) 
              
@@ -91,41 +88,32 @@ def vonFoerster(dt, t, tau, nt, tmps, hmrs, pnu, fhnu, pdes, fhrates, pinput):
                            /vsqrt(4*pi*nu*(abs(T-Tau)**3+tol))         # extended von foerster kernel
     else:
         nus   = feval(fhnu, tmps, pnu)      # calcula las varianzas para temperatures dadas
-        NU    = np.dot(np.ones(nt,1), nus)# crea una matriz de varianzas en funcion de las temperaturas
+        NU    = np.dot(np.ones(nt,1), nus)  # crea una matriz de varianzas en funcion de las temperaturas
         Pttau = (T>Tau)*exp(-(1-(RT-RTau))**2/(4*NU*(abs(T-Tau)+tol))) \
                            /vsqrt(4*pi*NU*(abs(T-Tau)**3+tol))         # extended von foerster kernel
     
     ints = dt*np.trapz(Pttau,axis=1)    # integrate in columns to normalize
     wts  = (ints>tol)*ints+(ints<=tol)  # calculate a  weighting factor 
-                                         # make it one if the integral is too  small (< tol)
+                                        # make it one if the integral is too  small (< tol)
     pout = dt*np.dot(pinput/np.transpose(wts), Pttau)      # output distribution, normalized by integral of P
 
 # Graficacion 3D de la funcion de probabilidad Pttau en funcion de t y de t*rates
-    global idCorrida
-    global codfig
-    if codfig > 7:
-        fh = plt.figure(codfig)   
-        ax = fh.gca(projection='3d')
-        plt.hold (True)
-        plt.grid (True, which='both')
-        plt.xlabel('Dias')
-        plt.ylabel('Tasas de desarrollo acumuladas')
-        #plt.zlabel('Probabilidad')
-        plt.title('Probabilidad de emergencia segun von Foerster Extendido')
-#        [X,Y] = meshgrid(1:nt, 1:nt)
-        surf = ax.plot_surface(T, RT, Pttau, rstride=1, cstride=1, \
-        cmap=cm.coolwarm, linewidth=0, antialiased=False)
-#       ax.set_zlim(-1.01, 1.01)
-        ax.zaxis.set_major_locator(LinearLocator(10))
-        ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
-        fh.colorbar(surf, shrink=0.5, aspect=5)
-        plt.show()
-#        fig = ['F',np.num2str(codfig), idCorrida, '.eps']
-#        print ('-dpsc2',fig)
-#        hold(False) 
-#        fh.close
-#        codfig = codfig + 1 
-	
+    # global idCorrida
+    # global codfig
+    # if codfig > 7:
+    #     fh = plt.figure(codfig)   
+    #     ax = fh.gca(projection='3d')
+    #     plt.hold (True)
+    #     plt.grid (True, which='both')
+    #     plt.xlabel('Dias')
+    #     plt.ylabel('Tasas de desarrollo acumuladas')
+    #     plt.title('Probabilidad de emergencia segun von Foerster Extendido')
+    #     surf = ax.plot_surface(T, RT, Pttau, rstride=1, cstride=1, \
+    #     cmap=cm.coolwarm, linewidth=0, antialiased=False)
+    #     ax.zaxis.set_major_locator(LinearLocator(10))
+    #     ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+    #     fh.colorbar(surf, shrink=0.5, aspect=5)
+    #     plt.show()
     #Functional return of vonFoerster
     return (T, Tau, rates, RT, Pttau, ints, wts, pout) # Ouput population distribution in time
  
@@ -161,5 +149,5 @@ for i in range(4):
    pinput[i] = 25
 idCorrida = "vFPy"
 codfig = 8
-#T, Tau, rates, RT, Pttau, ints, wts, pout = vonFoerster(dt, t, tau, nt, tmps, hmrs, pnu, fhnu, pdes, fhrates, pinput) 
+T, Tau, rates, RT, Pttau, ints, wts, pout = vonFoerster(dt, t, tau, nt, tmps, hmrs, pnu, fhnu, pdes, fhrates, pinput) 
 #plt.plot(t, pinput, "b", t, pout, "r")
