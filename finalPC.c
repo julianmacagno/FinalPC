@@ -5,9 +5,16 @@
 
 void print(float *v, int tam);
 void printM(float** v, int tam_x, int tam_y);
+<<<<<<< HEAD
 void cumtrapz(float *v1, float *v2, int tam);
 float briereI(float tmps, float* pdes);
 void vonFoerster(int nt, float* hmrs, float* tmps, float* pdes, float* t, float* tau, float dt);
+=======
+void cumtrapz();
+float briereI(float tmps, float* pdes);
+void varianza(); //no entra nunca
+void vonFoerster(int nt, float* hmrs, float* tmps, float* pdes, float* t, float* tau);
+>>>>>>> 475a4bdb94ce50b0bd687116b12eafae9b62c58c
 void tempSim(float* t, int T0, int T1, int T365, float *tmeds, float *tmps, int tamVecs);
 float* linspace(float start, float stop, int num);
 float** initZeros2DFloatMatrix(int tam_x, int tam_y) {
@@ -69,6 +76,12 @@ void main() {
     // //plt.plot(t, pinput, "b", t, pout, "r")
 }
 
+<<<<<<< HEAD
+=======
+void cumtrapz() {
+}
+
+>>>>>>> 475a4bdb94ce50b0bd687116b12eafae9b62c58c
 float briereI(float tmpsi, float* p) {
     float r  = 0;
 	if (tmpsi <= p[1]) {
@@ -85,7 +98,15 @@ float briereI(float tmpsi, float* p) {
 	return r;
 }
 
+<<<<<<< HEAD
 void vonFoerster(int nt, float* hmrs, float* tmps, float* pdes, float* t, float* tau, float dt) {
+=======
+void varianza() {
+}
+
+
+void vonFoerster(int nt, float* hmrs, float* tmps, float* pdes, float* t, float* tau) {
+>>>>>>> 475a4bdb94ce50b0bd687116b12eafae9b62c58c
     float tol = 0.0001;                         //von Foerster model tolerance
     
     float** T = initZeros2DFloatMatrix(nt, nt);             //Create T pointer to 2x2 matrix
@@ -101,6 +122,7 @@ void vonFoerster(int nt, float* hmrs, float* tmps, float* pdes, float* t, float*
         if(abs(hmrs[i]) > 0)
         *hmrsnul += 1;
     }
+<<<<<<< HEAD
 
     // calcula las tasas de desarrollo  para temperaturas dadas //EX IF-ELSE
     for (int i=0; i<nt; i++) {
@@ -114,15 +136,39 @@ void vonFoerster(int nt, float* hmrs, float* tmps, float* pdes, float* t, float*
     for(int i=0; i<nt; i++) {
         for(int j=0; j<nt; j++) {
             RT[i][j] = dt * vec[j];
+=======
+    
+    // evalua con humedad y sin humedad
+    if (*hmrsnul != 0) { // calcula las tasas de desarrollo para temperaturas y humedades relativas dadas 
+       for (int i=0; i<nt; i++) {
+            //rates[i] = briereI(tmps[i], hmrs[i], pdes);   //lamar a BRIEREI //no se usa nunca
+       }
+    }
+    else { // calcula las tasas de desarrollo  para temperaturas dadas
+        for (int i=0; i<nt; i++) {
+            rates[i] = briereI(tmps[i], pdes); //lamar a BRIEREI
+>>>>>>> 475a4bdb94ce50b0bd687116b12eafae9b62c58c
         }
     }
 //     RTau  = np.transpose(RT)                                    // create transpose of cumulative matrix for use in kernel
 //     vexp  = np.vectorize(exp)   
 //     vsqrt = np.vectorize(sqrt)    
     
+<<<<<<< HEAD
 //     nu = pnu[2] //EX IF-ELSE
 //     Pttau  = (T>Tau)*vexp(-(1-(RT-RTau))**2/(4*nu*(abs(T-Tau)+tol)))\
 //                  /vsqrt(4*pi*nu*(abs(T-Tau)**3+tol))         // extended von foerster kernel
+=======
+//     if (pnu[0] == 0) and (pnu[1] == 0):
+//         nu = pnu[2]
+//         Pttau  = (T>Tau)*vexp(-(1-(RT-RTau))**2/(4*nu*(abs(T-Tau)+tol)))\
+//                            /vsqrt(4*pi*nu*(abs(T-Tau)**3+tol))         // extended von foerster kernel
+//     else: //NO ENTRA NUNCA
+//         nus   = feval(fhnu, tmps, pnu)      // calcula las varianzas para temperatures dadas //lamar a varianza
+//         NU    = np.dot(np.ones(nt,1), nus)// crea una matriz de varianzas en funcion de las temperaturas
+//         Pttau = (T>Tau)*exp(-(1-(RT-RTau))**2/(4*NU*(abs(T-Tau)+tol))) \
+//                            /vsqrt(4*pi*NU*(abs(T-Tau)**3+tol))         // extended von foerster kernel
+>>>>>>> 475a4bdb94ce50b0bd687116b12eafae9b62c58c
     
 //     ints = dt*np.trapz(Pttau,axis=1)    // integrate in columns to normalize
 //     wts  = (ints>tol)*ints+(ints<=tol)  // calculate a  weighting factor 
@@ -132,10 +178,20 @@ void vonFoerster(int nt, float* hmrs, float* tmps, float* pdes, float* t, float*
 
 void cumtrapz(float *v1, float *v2, int tam) {
     v2[0]=0;
+<<<<<<< HEAD
     for(int i=1; i<tam; i++) {
         v2[i]= v2[i-1] + (v1[i-1] + v1[i]) / 2;
     }
 }
+=======
+    for(int i=1;i<tam;i++) {
+        v2[i]= v2[i-1] + (v1[i-1] + v1[i]) / 2;
+    }
+}
+
+//TEMPSIM simula tabla de Temperaturas para hemisferio sur
+void tempSim(float* t, int T0, int T1, int T365, float* tmeds, float* tmps, int tamVecs) {    
+>>>>>>> 475a4bdb94ce50b0bd687116b12eafae9b62c58c
 
 void tempSim(float* t, int T0, int T1, int T365, float* tmeds, float* tmps, int tamVecs) {    
     for(int i=0; i<tamVecs; i++) {
