@@ -76,17 +76,23 @@ def vonFoerster(dt, t, tau, nt, tmps, hmrs, pnu, fhnu, pdes, fhrates, pinput):
         # calcula las tasas de desarrollo  para temperaturas dadas
         for i in range(nt):
             rates[i] = feval(fhrates, tmps[i], pdes) 
-             
-    RT    = np.dot(dt * np.ones((nt,1)), [cumtrapz(rates)])  # create a matrix which is the cumulative development
+    
+    RT = np.dot(dt * np.ones((nt,1)), [cumtrapz(rates)])  # create a matrix which is the cumulative development
     RTau  = np.transpose(RT)                                    # create transpose of cumulative matrix for use in kernel
     vexp  = np.vectorize(exp)   
     vsqrt = np.vectorize(sqrt)    
     
     if (pnu[0] == 0) and (pnu[1] == 0):
+        print "Entro al if"
         nu = pnu[2]
         Pttau  = (T>Tau)*vexp(-(1-(RT-RTau))**2/(4*nu*(abs(T-Tau)+tol)))\
                            /vsqrt(4*pi*nu*(abs(T-Tau)**3+tol))         # extended von foerster kernel
     else:
+        print "Entro al else"
+        print "TMPS: "
+        print tmps
+        print "PNU: "
+        print pnu
         nus   = feval(fhnu, tmps, pnu)      # calcula las varianzas para temperatures dadas
         NU    = np.dot(np.ones(nt,1), nus)  # crea una matriz de varianzas en funcion de las temperaturas
         Pttau = (T>Tau)*exp(-(1-(RT-RTau))**2/(4*NU*(abs(T-Tau)+tol))) \
