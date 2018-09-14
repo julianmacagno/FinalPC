@@ -1,10 +1,7 @@
 import numpy as np
-from math import * 
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
-import matplotlib.pyplot as plt
-   
+from math import *
+import timeit
+
 def feval(funcName  , *args):      # first argument must be a string
     return eval(funcName)(*args)
 
@@ -83,16 +80,10 @@ def vonFoerster(dt, t, tau, nt, tmps, hmrs, pnu, fhnu, pdes, fhrates, pinput):
     vsqrt = np.vectorize(sqrt)    
     
     if (pnu[0] == 0) and (pnu[1] == 0):
-        print "Entro al if"
         nu = pnu[2]
         Pttau  = (T>Tau)*vexp(-(1-(RT-RTau))**2/(4*nu*(abs(T-Tau)+tol)))\
                            /vsqrt(4*pi*nu*(abs(T-Tau)**3+tol))         # extended von foerster kernel
     else:
-        print "Entro al else"
-        print "TMPS: "
-        print tmps
-        print "PNU: "
-        print pnu
         nus   = feval(fhnu, tmps, pnu)      # calcula las varianzas para temperatures dadas
         NU    = np.dot(np.ones(nt,1), nus)  # crea una matriz de varianzas en funcion de las temperaturas
         Pttau = (T>Tau)*exp(-(1-(RT-RTau))**2/(4*NU*(abs(T-Tau)+tol))) \
@@ -102,28 +93,10 @@ def vonFoerster(dt, t, tau, nt, tmps, hmrs, pnu, fhnu, pdes, fhrates, pinput):
     wts  = (ints>tol)*ints+(ints<=tol)  # calculate a  weighting factor 
                                         # make it one if the integral is too  small (< tol)
     pout = dt*np.dot(pinput/np.transpose(wts), Pttau)      # output distribution, normalized by integral of P
-
-# Graficacion 3D de la funcion de probabilidad Pttau en funcion de t y de t*rates
-    # global idCorrida
-    # global codfig
-    # if codfig > 7:
-    #     fh = plt.figure(codfig)   
-    #     ax = fh.gca(projection='3d')
-    #     plt.hold (True)
-    #     plt.grid (True, which='both')
-    #     plt.xlabel('Dias')
-    #     plt.ylabel('Tasas de desarrollo acumuladas')
-    #     plt.title('Probabilidad de emergencia segun von Foerster Extendido')
-    #     surf = ax.plot_surface(T, RT, Pttau, rstride=1, cstride=1, \
-    #     cmap=cm.coolwarm, linewidth=0, antialiased=False)
-    #     ax.zaxis.set_major_locator(LinearLocator(10))
-    #     ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
-    #     fh.colorbar(surf, shrink=0.5, aspect=5)
-    #     plt.show()
-    #Functional return of vonFoerster
-    return (T, Tau, rates, RT, Pttau, ints, wts, pout) # Ouput population distribution in time
+    np.set_printoptions(precision=3)
  
 #Generacion de datos de prueba de una corrida 
+startTime = timeit.default_timer()
 tmin = 30         # dia inicial de la corrida 30 de enero
 tmax = 30 + 100   # dia final de la corrida 30 de enero mas 100 dias
 nd = tmax - tmin  # numero de dias
@@ -155,5 +128,6 @@ for i in range(4):
    pinput[i] = 25
 idCorrida = "vFPy"
 codfig = 8
-T, Tau, rates, RT, Pttau, ints, wts, pout = vonFoerster(dt, t, tau, nt, tmps, hmrs, pnu, fhnu, pdes, fhrates, pinput) 
-#plt.plot(t, pinput, "b", t, pout, "r")
+vonFoerster(dt, t, tau, nt, tmps, hmrs, pnu, fhnu, pdes, fhrates, pinput)
+endTime = timeit.default_timer()
+print "Time elapsed: " + str((endTime - startTime)*1000) + " miliseconds."
