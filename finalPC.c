@@ -16,7 +16,6 @@ double** initZeros2DFloatMatrix(int tam_x, int tam_y);
 double valAbs(double a) { return (a<0) ? a*-1 : a; }
 double* trapz(double** mat, int tam);
 void meshgrid(double* x, double* y, int tam_x, int tam_y, double** X, double** Y);
-double briereI(double tmpsi, double* p);
 void printV(double *v, int tam);
 void printM(double** v, int tam_x, int tam_y);
 

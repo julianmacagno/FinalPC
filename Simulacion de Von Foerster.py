@@ -93,7 +93,6 @@ def vonFoerster(dt, t, tau, nt, tmps, hmrs, pnu, fhnu, pdes, fhrates, pinput):
     wts  = (ints>tol)*ints+(ints<=tol)  # calculate a  weighting factor 
                                         # make it one if the integral is too  small (< tol)
     pout = dt*np.dot(pinput/np.transpose(wts), Pttau)      # output distribution, normalized by integral of P
-    np.set_printoptions(precision=3)
  
 #Generacion de datos de prueba de una corrida 
 startTime = timeit.default_timer()
