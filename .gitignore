@@ -1,7 +1,6 @@
 *.o
-<<<<<<< HEAD
 *.a
 test.py
 test.c
-=======
->>>>>>> 475a4bdb94ce50b0bd687116b12eafae9b62c58c
+cFile.txt
+pyFile.txt
