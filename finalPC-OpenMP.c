@@ -18,7 +18,7 @@ double valAbs(double a) { return (a<0) ? a*-1 : a; }
 double* trapz(double** mat, int tam);
 void meshgrid(double* x, double* y, int tam_x, int tam_y, double** X, double** Y);
 void printV(double *v, int tam);
-void printM(double** v, int tam_x, int tam_y);
+void printM(double** v, int tam);
 double timeval_diff(struct timeval *a, struct timeval *b) {
   return (double)(a->tv_sec + (double)a->tv_usec/1000000) - (double)(b->tv_sec + (double)b->tv_usec/1000000);
 }
@@ -26,7 +26,7 @@ double timeval_diff(struct timeval *a, struct timeval *b) {
 void main() {
     struct timeval t_ini, t_fin;
     gettimeofday(&t_ini, NULL);
-    
+
     int tmin = 30;         // dia inicial de la corrida 30 de enero
     int tmax = 30 + 100;   // dia final de la corrida 30 de enero mas 100 dias
     int nd = tmax - tmin;  // numero de dias
@@ -73,66 +73,92 @@ void vonFoerster(int nt, double* hmrs, double* tmps, double* pdes, double* t, do
     meshgrid(t, tau, nt, nt, T, Tau);           // T,Tau matrices
     
     double* rates = calloc(nt, sizeof(double));   // initialize vector of rates for each instant t
-    
     double* hmrsnul = calloc(1, sizeof(double));
-    for(int i=0; i<nt; i++) {
-        if(abs(hmrs[i]) > 0)
-        *hmrsnul += 1;
-    }
-
-    for (int i=0; i<nt; i++) { // calcula las tasas de desarrollo  para temperaturas dadas
-        rates[i] = briereI(tmps[i], pdes); //lamar a BRIEREI
+    #pragma omp parallel
+    {
+        #pragma omp for
+            for(int i=0; i<nt; i++) {
+                if(abs(hmrs[i]) > 0)
+                *hmrsnul += 1;
+            }
+            for (int i=0; i<nt; i++) { // calcula las tasas de desarrollo  para temperaturas dadas
+                rates[i] = briereI(tmps[i], pdes); //lamar a BRIEREI
+            }
     }
 
     double *vec = calloc(nt, sizeof(double));
     cumtrapz(rates, vec, nt); //returns vec
-
     double **RT = initZeros2DFloatMatrix(nt, nt);
-    for(int i=0; i<nt; i++) {
-        for(int j=0; j<nt; j++) {
-            RT[i][j] = dt * vec[j];
-        }
+    #pragma omp parallel
+    {
+        #pragma omp for
+            for(int i=0; i<nt; i++) {
+                for(int j=0; j<nt; j++) {
+                    RT[i][j] = dt * vec[j];
+                }
+            }
     }
 
     double** RTau = initZeros2DFloatMatrix(nt, nt);
     findTranspose(RT, RTau, nt, nt); // create transpose of cumulative matrix for use in kernel
     double nu = pnu[2];
     double** Pttau = initZeros2DFloatMatrix(nt, nt);         // initialize matrix which will hold the convolution kernel
-    for(int i=0; i<nt; i++) {
-        for(int j=0; j<nt; j++) {
-            double a = (T[i][j] > Tau[i][j]);
-            double b = - pow(1 - (RT[i][j] - RTau[i][j]), 2);
-            double c = (4 * nu * (valAbs(T[i][j] - Tau[i][j]) + tol));
-            double numerador =  pow(e, b / c);
-            double denominador =  sqrt(4 * PI * nu * (pow(valAbs(T[i][j] - Tau[i][j]), 3) + tol));
-            Pttau[i][j] = a * numerador / denominador;
-        }
+    #pragma omp parallel
+    {
+        #pragma omp for
+            for(int i=0; i<nt; i++) {
+                for(int j=0; j<nt; j++) {
+                    double a = (T[i][j] > Tau[i][j]);
+                    double b = - pow(1 - (RT[i][j] - RTau[i][j]), 2);
+                    double c = (4 * nu * (valAbs(T[i][j] - Tau[i][j]) + tol));
+                    double numerador =  pow(e, b / c);
+                    double denominador =  sqrt(4 * PI * nu * (pow(valAbs(T[i][j] - Tau[i][j]), 3) + tol));
+                    Pttau[i][j] = a * numerador / denominador;
+                }
+            }
     }
+
     double* ints = trapz(Pttau, nt);
-    for(int i=0; i<nt; i++) {
-        ints[i] *= dt;
+    #pragma omp parallel
+    {
+        #pragma omp for
+            for(int i=0; i<nt; i++) {
+                ints[i] *= dt;
+            }
     }
 
     double* wts = calloc(nt, sizeof(double));     // initialize vector which will hold weight for normalization
-    for(int i=0; i<nt; i++) {
-        wts[i] = (ints[i]>tol)*ints[i] + (ints[i]<=tol); // calculate a  weighting factor 
+    #pragma omp parallel
+    {
+        #pragma omp for
+            for(int i=0; i<nt; i++) {
+                wts[i] = (ints[i]>tol)*ints[i] + (ints[i]<=tol); // calculate a  weighting factor 
+            }
     }
     
     double* pout = calloc(nt, sizeof(double));
-    for (int i = 0; i < nt; i++) {
-        double result = 0.0;
-        for (int j = 0; j < nt; j++) {
-            result += Pttau[j][i] * (pinput[j]/wts[j]);
-        }
-        pout[i] = dt * result;
+    #pragma omp parallel
+    {
+        #pragma omp for
+            for (int i = 0; i < nt; i++) {
+                double result = 0.0;
+                for (int j = 0; j < nt; j++) {
+                    result += Pttau[j][i] * (pinput[j]/wts[j]);
+                }
+                pout[i] = dt * result;
+            }
     }
 }
 
 void findTranspose(double **vec, double** transpose, int x, int y) { //return transpose of a matrix on **transpose
-    for(int i=0; i<x; ++i) {
-        for(int j=0; j<y; ++j) {
-            transpose[j][i] = vec[i][j];
-        }
+    #pragma omp parallel
+    {
+        #pragma omp for
+            for(int i=0; i<x; ++i) {
+                for(int j=0; j<y; ++j) {
+                    transpose[j][i] = vec[i][j];
+                }
+            }
     }
 }
 
@@ -155,50 +181,56 @@ double briereI(double tmpsi, double* p) {
 void cumtrapz(double *v1, double *v2, int tam) {
     v2[0]=0;
     for(int i=1; i<tam; i++) {
-        v2[i]= v2[i-1] + (v1[i-1] + v1[i]) / 2;
+        v2[i]= v2[i-1] + (v1[i-1] + v1[i]) / 2; //no paralelizado, depende del orden en que se ejecuta el procesamiento del vector
     }
 }
 
 void tempSim(double* t, int T0, int T1, int T365, double* tmeds, double* tmps, int tamVecs) {    
-    for(int i=0; i<tamVecs; i++) {
-        tmeds[i] = T0 + T1/2 * cos(2 * (PI/365) * t[i]); //equivalente a hacer np.factorize y desp resolver con el vector t. Hay un problema con la precision de los calculos, en python tiene mas decimales
-    }
-
-    for(int i=0; i<tamVecs; i++) {
-        tmps[i] = tmeds[i] - T365/2 * cos(2 * PI * (t[i] - (int)t[i])); //equivalente a hacer np.factorize y desp resolver con el vector t y tmeds. Hay un problema con la precision de los calculos, en python tiene mas decimales
+    #pragma omp parallel
+    {
+        #pragma omp for
+            for(int i=0; i<tamVecs; i++) {
+                tmeds[i] = T0 + T1/2 * cos(2 * (PI/365) * t[i]); //equivalente a hacer np.factorize y desp resolver con el vector t. Hay un problema con la precision de los calculos, en python tiene mas decimales
+            }
+            for(int i=0; i<tamVecs; i++) {
+                tmps[i] = tmeds[i] - T365/2 * cos(2 * PI * (t[i] - (int)t[i])); //equivalente a hacer np.factorize y desp resolver con el vector t y tmeds. Hay un problema con la precision de los calculos, en python tiene mas decimales
+            }
     }
 }
 
 double* linspace(double start, double stop, int num) {
     double *v = calloc(num, sizeof(double));
     double val = (stop-start)/(num-1); //Agregue el -1 para que los resultados sean los mismos que en el programa de python
-    for(int i=0; i<num; i++) {
-        v[i] = start + i*val;
-    }
-
+    #pragma omp parallel
+    {
+        #pragma omp for
+            for(int i=0; i<num; i++) {
+                v[i] = start + i*val;
+            }
+    } 
     return v;
 }
 
 void printV(double *v, int tam) {
     for(int i=0; i<tam; i++) {
-        printf("%.5g\n", v[i]);
+        printf("%g\n", v[i]);
     }
 }
 
-void printM(double** v, int tam_x, int tam_y) {
-    for(int i=0; i<tam_x; i++) {
-        for(int j=0; j<tam_y; j++) {
-            printf("%g  ", v[i][j]);
+void printM(double** v, int tam) {
+    for(int i=0; i<tam; i++) {
+        for(int j=0; j<tam; j++) {
+            printf("%g\n", v[i][j]);
         }
-        printf("\n");
+        //printf("\n");
     }
-    printf("\n\n");
+    //printf("\n\n");
 }
 
 double** initZeros2DFloatMatrix(int tam_x, int tam_y) {
     double **ptr = calloc(tam_x, sizeof(double*));
     for(int i=0;i<tam_y; i++) {
-      ptr[i] = calloc(tam_y, sizeof(double));
+        ptr[i] = calloc(tam_y, sizeof(double));
     }
     
     return ptr;
@@ -209,7 +241,7 @@ double* trapz(double** mat, int tam) {
     double sum = 0;
     for(int i=0; i<tam; i++) {
         for(int j=0; j<tam-1; j++) {
-           sum += (mat[i][j+1] + mat[i][j]) / 2.0;
+            sum += (mat[i][j+1] + mat[i][j]) / 2.0; //no paralelizado, depende del orden en que se ejecuta el procesamiento del vector
         }
         res[i] = sum;
         sum=0;
@@ -218,15 +250,18 @@ double* trapz(double** mat, int tam) {
 }
 
 void meshgrid(double* x, double* y, int tam_x, int tam_y, double** X, double** Y) {
-    for(int i=0; i<tam_x; i++) {
-        for(int j=0; j<tam_y; j++) {
-            X[i][j] = x[j]; 
-        }
-    }
-
-    for(int i=0; i<tam_x; i++) {
-        for(int j=0; j<tam_y; j++) {
-            Y[i][j] = y[i];
-        }
+    #pragma omp parallel
+    {
+        #pragma omp for
+            for(int i=0; i<tam_x; i++) {
+                for(int j=0; j<tam_y; j++) {
+                    X[i][j] = x[j]; 
+                }
+            }
+            for(int i=0; i<tam_x; i++) {
+                for(int j=0; j<tam_y; j++) {
+                    Y[i][j] = y[i];
+                }
+            }
     }
 }

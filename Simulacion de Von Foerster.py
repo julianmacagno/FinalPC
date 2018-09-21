@@ -2,6 +2,15 @@ import numpy as np
 from math import *
 import timeit
 
+def printV(vec, size):
+    for i in range(0,size):
+            print vec[i]
+
+def printM(mat, size):
+    for i in range(0,size):
+        for j in range(0,size):
+            print mat[i][j]
+
 def feval(funcName  , *args):      # first argument must be a string
     return eval(funcName)(*args)
 
@@ -73,7 +82,7 @@ def vonFoerster(dt, t, tau, nt, tmps, hmrs, pnu, fhnu, pdes, fhrates, pinput):
         # calcula las tasas de desarrollo  para temperaturas dadas
         for i in range(nt):
             rates[i] = feval(fhrates, tmps[i], pdes) 
-    
+
     RT = np.dot(dt * np.ones((nt,1)), [cumtrapz(rates)])  # create a matrix which is the cumulative development
     RTau  = np.transpose(RT)                                    # create transpose of cumulative matrix for use in kernel
     vexp  = np.vectorize(exp)   
